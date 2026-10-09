@@ -166,7 +166,7 @@ export default function LoginPage() {
                 alt="Yesen Technologies"
                 className="mx-auto h-24 w-auto object-contain sm:h-28"
               />
-              <p className="mt-4 text-sm text-slate-500 sm:text-base">Welcome to Yesen CRM</p>
+              <p className="mt-4 text-sm text-slate-500 sm:text-base">Thankyou to Yesen CRM</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
