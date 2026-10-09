@@ -1,0 +1,38 @@
+
+name: Deploy Yesen CRM Frontend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy frontend to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/ubuntu/yesen-crm/frontend
+
+            git pull --ff-only origin main
+
+            sudo docker build -t yesen-crm-frontend .
+
+            sudo docker rm -f yesen-frontend || true
+
+            sudo docker run -d \
+              --name yesen-frontend \
+              -p 80:80 \
+              --restart unless-stopped \
+              yesen-crm-frontend
+
+            sudo docker ps
