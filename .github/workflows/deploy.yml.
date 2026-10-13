@@ -1,0 +1,21 @@
+
+name: Deploy Frontend with Ansible
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Run Ansible deployment
+        run: |
+          cd /home/ubuntu/frontend
+          ansible-playbook -i inventory.ini frontend.yml
