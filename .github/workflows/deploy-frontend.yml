@@ -1,0 +1,66 @@
+
+name: Deploy Yesen CRM Frontend to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2 and MicroK8s
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: IMAGE_TAG
+          command_timeout: 15m
+          script: |
+            set -eu
+
+            cd /home/ubuntu/yesen--crm-admin-frontend
+
+            echo "Pulling latest frontend code..."
+            git pull --ff-only origin main
+
+            echo "Building Docker image..."
+            sudo docker build \
+              -t "yesen-frontend:${IMAGE_TAG}" .
+
+            echo "Exporting Docker image..."
+            sudo docker save \
+              "yesen-frontend:${IMAGE_TAG}" \
+              -o "/tmp/yesen-frontend-${IMAGE_TAG}.tar"
+
+            echo "Importing image into MicroK8s..."
+            microk8s ctr image import \
+              "/tmp/yesen-frontend-${IMAGE_TAG}.tar"
+
+            echo "Updating Kubernetes deployment..."
+            microk8s kubectl set image \
+              deployment/yesen-frontend \
+              "yesen-frontend=yesen-frontend:${IMAGE_TAG}"
+
+            echo "Waiting for rollout..."
+            microk8s kubectl rollout status \
+              deployment/yesen-frontend \
+              --timeout=180s
+
+            echo "Checking deployment..."
+            microk8s kubectl get pods
+            microk8s kubectl get services
+
+            sudo rm -f "/tmp/yesen-frontend-${IMAGE_TAG}.tar"
+
+            echo "Frontend deployment completed successfully!"
